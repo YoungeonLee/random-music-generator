@@ -9,7 +9,7 @@ track    = 0
 channel  = 0
 time     = 0    # In beats
 duration = 1    # In beats
-tempo    = 60   # In BPM
+tempo    = 120   # In BPM
 volume   = 100  # 0-127, as per the MIDI standard
 
 
@@ -50,16 +50,24 @@ class Measure():
 
     def CA_notes(self):
         """create and add random notes"""
-        for i in range(4):
-            rnote = Note(random.choice(notes))
+        beat = 0
+        while beat < self.length:
+            pitch = random.choice(chord(self.chord))
+            duration = random.choice([1,.5])
+            beat += duration
+            if beat > self.length:
+                duration = beat - self.length
+            rnote = Note(pitch, duration)
             self.add_note(rnote)
 
 
 
 class Melody():
-    def __init__(self,length=8):
+    def __init__(self,length=8,chrd_prg=['C','Am','F','G']):
+        """chrd_prg = chord progression"""
         self.length = length
         self.measures = []
+        self.chrd_prg = chrd_prg
 
     def __repr__(self):
         return f'{self.measures}'
@@ -69,8 +77,9 @@ class Melody():
         
     def CA_measures(self):
         """creates and add random measure"""
-        for i in range(8):
-            rmeasure = Measure()
+        for i in range(self.length):
+            chord = self.chrd_prg[i%len(self.chrd_prg)]
+            rmeasure = Measure(chord=chord)
             rmeasure.CA_notes()
             self.add_measure(rmeasure)
 
@@ -92,7 +101,7 @@ class Piece():
     def CA_melodies(self):
         """create and add random melodies"""
         for i in range(4):
-            rmelody = Melody()
+            rmelody = Melody(chrd_prg=self.chrd_prg)
             rmelody.CA_measures()
             self.add_melody(rmelody)
 
@@ -102,7 +111,7 @@ class Piece():
         MyMIDI = MIDIFile(1)
         MyMIDI.addTempo(track, time, tempo)
 
-        for melody in p.melodies:
+        for melody in self.melodies:
             for measure in melody.measures:
                 for note in measure.notes:
                     MyMIDI.addNote(track, channel, note.pitch, time, note.duration, volume)
@@ -114,9 +123,14 @@ class Piece():
 
 
 
-#test
-p=Piece()
-p.CA_melodies()
+def main():
+    p=Piece()
+    p.CA_melodies()
+    p.write_midi()
+    
+
+if __name__ == '__main__':
+    main()
 
 
 
