@@ -37,73 +37,116 @@ class Note():
 
 
 class Measure():
-    def __init__(self,length=4,chord='C'):
+    def __init__(self,length=4,chord='C',note_lengths={1:1,.5:1}):
         self.length = length
         self.chord = chord
         self.notes = []
+        self.bass = []
+        self.note_lengths = note_lengths
 
     def __repr__(self):
-        return f"{self.notes}"
+        return f"Notes: {self.notes}\nBass: {self.bass}"
 
     def add_note(self,Note):
         self.notes.append(Note)
+
+    def add_bass(self,Note):
+        self.bass.append(Note)
 
     def CA_notes(self):
         """create and add random notes"""
         beat = 0
         while beat < self.length:
             pitch = random.choice(chord(self.chord))
-            duration = random.choice([1,.5])
-            beat += duration
+            duration = random.choices(list(self.note_lengths.keys()),list(self.note_lengths.values()))
+            beat += duration[0]
             if beat > self.length:
-                duration = beat - self.length
-            rnote = Note(pitch, duration)
+                beat -= duration[0]
+                duration = self.length - beat
+                duration = [duration]
+                beat += duration[0]
+            rnote = Note(pitch, duration[0])
             self.add_note(rnote)
+        assert beat == self.length
+
+    def CA_bass(self):
+        """create and add random bass"""
+        chords = chord(self.chord)
+        for note in chords:
+            bass = Note(pitch = note - 12, duration = 4)
+            self.add_bass(bass)
+
+        
 
 
 
 class Melody():
-    def __init__(self,length=8,chrd_prg=['C','Am','F','G']):
+    def __init__(self,length=8,chrd_prg=['C','Am','F','G'],note_lengths={1:1,.5:1}):
         """chrd_prg = chord progression"""
         self.length = length
         self.measures = []
+        self.bass = []
         self.chrd_prg = chrd_prg
+        self.note_lengths=note_lengths
 
     def __repr__(self):
-        return f'{self.measures}'
+        return f'Measures: {self.measures}\nBass: {self.bass}'
 
     def add_measure(self,Measure):
         self.measures.append(Measure)
+
+    def add_bass(self,Measure):
+        self.bass.append(Measure)
         
     def CA_measures(self):
         """creates and add random measure"""
         for i in range(self.length):
             chord = self.chrd_prg[i%len(self.chrd_prg)]
-            rmeasure = Measure(chord=chord)
+            rmeasure = Measure(chord=chord, note_lengths=self.note_lengths)
             rmeasure.CA_notes()
             self.add_measure(rmeasure)
+
+    def CA_bass(self):
+        """creates and add random base"""
+        for i in range(self.length):
+            chord = self.chrd_prg[i%len(self.chrd_prg)]
+            rmeasure = Measure(chord=chord, note_lengths=self.note_lengths)
+            rmeasure.CA_bass()
+            self.add_bass(rmeasure)
 
 
 
 class Piece():
-    def __init__(self,length=100,chrd_prg=['C','Am','F','G']):
+    def __init__(self,length=10,chrd_prg=['C','Am','F','G'],note_lengths={1:1,.5:1}):
         """chrd_prg = chord progression"""
         self.length = length
         self.melodies = []
+        self.bass = []
         self.chrd_prg = chrd_prg
+        self.note_lengths = note_lengths
 
     def __repr__(self):
-        return f'{self.melodies}'
+        return f'Melody: {self.melodies}\nBass: {self.bass}'
 
     def add_melody(self,Melody):
         self.melodies.append(Melody)
 
+    def add_bass(self,Melody):
+        self.bass.append(Melody)
+
     def CA_melodies(self):
         """create and add random melodies"""
-        for i in range(4):
-            rmelody = Melody(chrd_prg=self.chrd_prg)
+        for i in range(self.length):
+            rmelody = Melody(chrd_prg=self.chrd_prg, note_lengths=self.note_lengths)
             rmelody.CA_measures()
             self.add_melody(rmelody)
+
+    def CA_bass(self):
+        """create and add random bass"""
+        for i in range(self.length):
+            rmelody = Melody(chrd_prg=self.chrd_prg, note_lengths=self.note_lengths)
+            rmelody.CA_bass()
+            self.add_bass(rmelody)
 
     def write_midi(self):
         """writes midi file for the piece"""
@@ -117,16 +160,26 @@ class Piece():
                     MyMIDI.addNote(track, channel, note.pitch, time, note.duration, volume)
                     time += note.duration
 
+        time = 0
+
+        for melody in self.bass:
+            for measure in melody.bass:
+                for note in measure.bass:
+                    MyMIDI.addNote(track, channel + 1, note.pitch, time, note.duration, volume)
+                time += 4
+
         with open("test.mid", "wb") as output_file:
             MyMIDI.writeFile(output_file)
-        print('Done!')
+        print('Done! Midi file saved as "test.mid"')
 
 
 
 def main():
-    p=Piece()
+    p=Piece(note_lengths={1:2,.5:1})
     p.CA_melodies()
+    p.CA_bass()
     p.write_midi()
+
     
 
 if __name__ == '__main__':
