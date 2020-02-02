@@ -37,12 +37,13 @@ class Note():
 
 
 class Measure():
-    def __init__(self,length=4,chord='C',note_lengths={1:1,.5:1}):
+    def __init__(self,length=4,chord='C',note_lengths={1:1,.5:1},str_beat=[1,3]):
         self.length = length
         self.chord = chord
         self.notes = []
         self.bass = []
         self.note_lengths = note_lengths
+        self.str_beat=str_beat
 
     def __repr__(self):
         return f"Notes: {self.notes}\nBass: {self.bass}"
@@ -57,7 +58,10 @@ class Measure():
         """create and add random notes"""
         beat = 0
         while beat < self.length:
-            pitch = random.choice(chord(self.chord))
+            if beat+1 in self.str_beat:
+                pitch = random.choice(chord(self.chord))
+            else:
+                pitch = random.choice(notes)
             duration = random.choices(list(self.note_lengths.keys()),list(self.note_lengths.values()))
             beat += duration[0]
             if beat > self.length:
@@ -108,7 +112,9 @@ class Melody():
 
 class Piece():
     def __init__(self,length=10,chrd_prg=['C','Am','F','G'],note_lengths={1:1,.5:1}):
-        """chrd_prg = chord progression"""
+        """chrd_prg = chord progression
+        note_lengths = {length1:length1 probability, ...
+        1 is a quarter note and .5 is eight note and ..."""
         self.length = length
         self.melodies = []
         self.chrd_prg = chrd_prg
@@ -156,7 +162,7 @@ class Piece():
 
 
 def main():
-    p=Piece(note_lengths={1:2,.5:1})
+    p=Piece(note_lengths={.5:1})
     p.CA_melodies()
     p.write_midi()
 
