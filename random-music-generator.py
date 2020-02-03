@@ -80,6 +80,20 @@ class Measure():
             bass = Note(pitch = note - 12, duration = 4)
             self.add_bass(bass)
 
+    def CA_Lnote(self):
+        """create and add last note"""
+        pitch = random.choice(chord(self.chord))
+        duration = 4
+        lnote = Note(pitch, duration)
+        self.add_note(lnote)
+
+    def CA_Lbass(self):
+        """create and add last bass"""
+        chords = chord(self.chord)
+        for note in chords:
+            bass = Note(pitch = note - 12, duration = 4)
+            self.add_bass(bass)
+
         
 
 
@@ -99,7 +113,7 @@ class Melody():
         self.measures.append(Measure)
 
     def CA_measures(self):
-        """creates and add random measure"""
+        """creates and add random measures"""
         for i in range(self.length):
             chord = self.chrd_prg[i%len(self.chrd_prg)]
             rmeasure = Measure(chord=chord, note_lengths=self.note_lengths)
@@ -107,11 +121,19 @@ class Melody():
             rmeasure.CA_bass()
             self.add_measure(rmeasure)
 
+    def CA_Lmeasure(self):
+        """creates and add last measure"""
+        chord = self.chrd_prg[0]
+        lmeasure = Measure(chord=chord, note_lengths=self.note_lengths)
+        lmeasure.CA_Lnote()
+        lmeasure.CA_Lbass()
+        self.add_measure(lmeasure)
+
 
 
 
 class Piece():
-    def __init__(self,length=10,chrd_prg=['C','Am','F','G'],note_lengths={1:1,.5:1}):
+    def __init__(self,length=2,chrd_prg=['C','Am','F','G'],note_lengths={1:1,.5:1}):
         """chrd_prg = chord progression
         note_lengths = {length1:length1 probability, ...
         1 is a quarter note and .5 is eight note and ..."""
@@ -127,11 +149,17 @@ class Piece():
         self.melodies.append(Melody)
 
     def CA_melodies(self):
-        """create and add random melodies"""
+        """create and add random melodies
+        adds an extra ending measure with a note from the chord """
         for i in range(self.length):
             rmelody = Melody(chrd_prg=self.chrd_prg, note_lengths=self.note_lengths)
             rmelody.CA_measures()
             self.add_melody(rmelody)
+
+        # ending note
+        emelody = Melody(chrd_prg=self.chrd_prg)
+        emelody.CA_Lmeasure()
+        self.add_melody(emelody)
 
     def write_midi(self):
         """writes midi file for the piece"""
@@ -162,7 +190,7 @@ class Piece():
 
 
 def main():
-    p=Piece(note_lengths={.5:1})
+    p=Piece()
     p.CA_melodies()
     p.write_midi()
 
