@@ -24,6 +24,18 @@ def chord(chord):
         note_list = [root,root+3,root+7]
     return note_list
 
+def neg_harm(pitches, root=60):
+    """rotates the pitches to negative harmony
+    with root(scale) as the base for rotation axis
+    major -> minor"""
+    neg_pitches = []
+    for pitch in pitches:
+        root_diff = pitch - root
+        shift = 7 - root_diff*2
+        neg_pitch = pitch + shift
+        neg_pitches.append(neg_pitch)
+    return neg_pitches
+
 
 
 class Pitch():
@@ -167,29 +179,46 @@ class Piece():
         emelody.CA_Lmeasure()
         self.add_melody(emelody)
 
+    def in_notes(self):
+        """breaks down the piece to only notes (returns notes as list made of list [[notes][bass_notes]])"""
+        notes = []
+        bass_notes = []
+        # notes
+        for melody in self.melodies:
+            for measure in melody.measures:
+                for note in measure.notes:
+                    notes.append(note)
+        # bass
+        for melody in self.melodies:
+            for measure in melody.measures:
+                for note in measure.bass:
+                    bass_notes.append(note)
+
+        return [notes,bass_notes]
+        
+
     def write_midi(self):
         """writes midi file for the piece"""
         time = 0
         MyMIDI = MIDIFile(1)
         MyMIDI.addTempo(track, time, tempo)
-
-        for melody in self.melodies:
-            for measure in melody.measures:
-                for note in measure.notes:
-                    for pitch in note.pitch:
-                        MyMIDI.addNote(track, channel, pitch, time, note.duration, volume)
-                    time += note.duration
+        piece = self.in_notes()
+        print(len(piece[0]))
+        # adding notes
+        for note in piece[0]:
+            print(note)
+            for pitch in note.pitch:
+                MyMIDI.addNote(track, channel, pitch, time, note.duration, volume)
+            time += note.duration
                     
         
         # adding bass
         time = 0
 
-        for melody in self.melodies:
-            for measure in melody.measures:
-                for note in measure.bass:
-                    for pitch in note.pitch:
-                        MyMIDI.addNote(track, channel + 1, pitch - 12, time, note.duration, volume)
-                time += note.duration
+        for note in piece[1]:
+            for pitch in note.pitch:
+                MyMIDI.addNote(track, channel + 1, pitch - 12, time, note.duration, volume)
+            time += note.duration
         
 
 
