@@ -26,10 +26,18 @@ def chord(chord):
 
 
 
+class Pitch():
+    """pitch class can contain multiple pitches (in list form) to be played at the same time"""
+    def __init__(self,pitch=[60]):
+        self.pitches = pitch
+
+
+        
 class Note():
-    def __init__(self,pitch=60,duration=1):
+    def __init__(self,pitch=[60],duration=1):
         self.pitch = pitch
         self.duration = duration
+        assert type(self.pitch)==type([]), "p=note.pitch isn't a list"
 
     def __repr__(self):
             return f"Pitch: {self.pitch} / Duration: {self.duration}\n"
@@ -59,9 +67,9 @@ class Measure():
         beat = 0
         while beat < self.length:
             if beat+1 in self.str_beat:
-                pitch = random.choice(chord(self.chord))
+                pitch = [random.choice(chord(self.chord))]
             else:
-                pitch = random.choice(notes)
+                pitch = [random.choice(notes)]
             duration = random.choices(list(self.note_lengths.keys()),list(self.note_lengths.values()))
             beat += duration[0]
             if beat > self.length:
@@ -76,13 +84,12 @@ class Measure():
     def CA_bass(self):
         """create and add random bass"""
         chords = chord(self.chord)
-        for note in chords:
-            bass = Note(pitch = note - 12, duration = 4)
-            self.add_bass(bass)
+        bass = Note(pitch = chords, duration = 4)
+        self.add_bass(bass)
 
     def CA_Lnote(self):
         """create and add last note"""
-        pitch = random.choice(chord(self.chord))
+        pitch = [random.choice(chord(self.chord))]
         duration = 4
         lnote = Note(pitch, duration)
         self.add_note(lnote)
@@ -90,9 +97,8 @@ class Measure():
     def CA_Lbass(self):
         """create and add last bass"""
         chords = chord(self.chord)
-        for note in chords:
-            bass = Note(pitch = note - 12, duration = 4)
-            self.add_bass(bass)
+        bass = Note(pitch = chords, duration = 4)
+        self.add_bass(bass)
 
         
 
@@ -163,24 +169,28 @@ class Piece():
 
     def write_midi(self):
         """writes midi file for the piece"""
-        global time
+        time = 0
         MyMIDI = MIDIFile(1)
         MyMIDI.addTempo(track, time, tempo)
 
         for melody in self.melodies:
             for measure in melody.measures:
                 for note in measure.notes:
-                    MyMIDI.addNote(track, channel, note.pitch, time, note.duration, volume)
+                    for pitch in note.pitch:
+                        MyMIDI.addNote(track, channel, pitch, time, note.duration, volume)
                     time += note.duration
-
+                    
+        
         # adding bass
         time = 0
 
         for melody in self.melodies:
             for measure in melody.measures:
                 for note in measure.bass:
-                    MyMIDI.addNote(track, channel + 1, note.pitch, time, note.duration, volume)
-                time += 4
+                    for pitch in note.pitch:
+                        MyMIDI.addNote(track, channel + 1, pitch - 12, time, note.duration, volume)
+                time += note.duration
+        
 
 
         with open("test.mid", "wb") as output_file:
