@@ -1,6 +1,7 @@
 import random
 from midiutil import MIDIFile
 from midiutil.MidiFile import MIDIFile
+import copy
 
 notes  = [60, 62, 64, 65, 67, 69, 71, 72]  # MIDI note number
 degrees = {'C':60, 'D':62, 'E':64, 'F':65, 'G':67, 'A':69, 'B':71}
@@ -162,7 +163,7 @@ class Piece():
 
     def __repr__(self):
         return f'{self.melodies}'
-
+    
     def add_melody(self,Melody):
         self.melodies.append(Melody)
 
@@ -180,7 +181,8 @@ class Piece():
         self.add_melody(emelody)
 
     def in_notes(self):
-        """breaks down the piece to only notes (returns notes as list made of list [[notes][bass_notes]])"""
+        """breaks down the piece to only notes
+        (returns notes as list made of list [[notes][bass_notes]])"""
         notes = []
         bass_notes = []
         # notes
@@ -195,6 +197,20 @@ class Piece():
                     bass_notes.append(note)
 
         return [notes,bass_notes]
+
+    def CA_neg_harm(self):
+        """create and add a negative harmony of the existing piece"""
+        p = copy.deepcopy(self)
+        for melody in p.melodies:
+            for measure in melody.measures:
+                for note in measure.notes:
+                    note.pitch = neg_harm(note.pitch, degrees[self.chrd_prg[0]])
+                for note in measure.bass:
+                    note.pitch = neg_harm(note.pitch, degrees[self.chrd_prg[0]]) 
+        for melody in p.melodies:
+            self.add_melody(melody)
+                    
+            
         
 
     def write_midi(self):
@@ -203,10 +219,8 @@ class Piece():
         MyMIDI = MIDIFile(1)
         MyMIDI.addTempo(track, time, tempo)
         piece = self.in_notes()
-        print(len(piece[0]))
         # adding notes
         for note in piece[0]:
-            print(note)
             for pitch in note.pitch:
                 MyMIDI.addNote(track, channel, pitch, time, note.duration, volume)
             time += note.duration
@@ -214,7 +228,6 @@ class Piece():
         
         # adding bass
         time = 0
-
         for note in piece[1]:
             for pitch in note.pitch:
                 MyMIDI.addNote(track, channel + 1, pitch - 12, time, note.duration, volume)
@@ -229,9 +242,14 @@ class Piece():
 
 
 def main():
-    p=Piece()
+    p=Piece(chrd_prg=['C','G','Am','F'])
+    print("created class piece")
     p.CA_melodies()
+    print("created and added melodies")
+    p.CA_neg_harm()
+    print("created and added negative harmonies")
     p.write_midi()
+    print("Finished!")
 
     
 
