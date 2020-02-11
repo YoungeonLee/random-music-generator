@@ -75,6 +75,32 @@ def lower_octave(lis):
     for i in range(len(lis)):
         lis[i] -= 12
     return lis
+
+
+def close_note(target, notes):
+    """picks a closest note to a target from notes"""
+    diff = 1
+    coinflip = random.randint(0,1)
+    notes = notes
+    while True:
+        note1 = target + diff
+        note2 = target - diff
+        if note1 in notes and note2 in notes:
+            if coinflip == 1:
+                note = note1
+                break
+            else:
+                note = note2
+                break
+        elif note1 in notes:
+            note = note1
+            break
+        elif note2 in notes:
+            note = note2
+            break
+        else:
+            diff += 1
+    return note
     
 
         
@@ -116,6 +142,48 @@ class BasicIdea():
 
 
     def CA_notes(self):
+        """creates list of durations first then fills in the pitch"""
+        beat = 0
+        # creating durations
+        durations = []
+        while beat < self.length*self.beats_per_measure:
+            duration = random.choices(list(self.note_lengths.keys()),list(self.note_lengths.values()))[0]
+            beat += duration
+            if beat > self.length*self.beats_per_measure:
+                beat -= duration
+                duration = self.length*self.beats_per_measure - beat
+                beat += duration
+            durations.append(duration)
+
+        # filling in pitches
+        pitches = [[0]]*len(durations)
+        # for strong beats
+        beat = 0
+        for i in range(len(durations)):
+            if (beat+1)%self.beats_per_measure in self.str_beat:
+                chrd = self.chrd_prg[int(beat // 4)]
+                pitch = [random.choice(chord(chrd))]
+                pitches[i] = pitch
+            beat += durations[i]
+        # for 'weak' beats
+        for i in range(len(durations)):
+            if i == 0:
+                root = degrees[self.chrd_prg[0][0]]
+                pitches[-1] = [close_note(root,notes)]
+            elif pitches[-(i+1)] == [0]:
+                next_note = pitches[1-(i+1)]
+                pitches[-(i+1)] = [close_note(next_note[0],notes)]
+
+        # add the notes   
+        for i in range(len(durations)):
+            rnote = Note(pitches[i],durations[i])
+            self.add_note(rnote)
+                
+            
+            
+
+
+    def CA_notes1(self):
         """create and add random notes"""
         beat = 0
         while beat < self.length*self.beats_per_measure:
@@ -209,9 +277,9 @@ class Piece():
         p = copy.deepcopy(self)
         for idea in p.ideas:
             for note in idea.melody:
-                note.pitch = neg_harm(note.pitch, degrees[self.chrd_prg[0][:1]])
+                note.pitch = neg_harm(note.pitch, degrees[self.scale[:1]])
             for note in idea.bass:
-                note.pitch = neg_harm(note.pitch, degrees[self.chrd_prg[0][:1]]-12)
+                note.pitch = neg_harm(note.pitch, degrees[self.scale[:1]]-12)
         for idea in p.ideas:
             self.add_idea(idea)
 
@@ -246,7 +314,7 @@ class Piece():
 
 
 def main():
-    p=Piece(scale = 'D',chrd_prg=['Bm','Em','G','A'])
+    p=Piece()
     p.CA_ideas()
     p.CA_last()
     p.CA_neg_harm()
