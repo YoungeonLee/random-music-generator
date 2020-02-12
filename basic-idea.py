@@ -3,6 +3,10 @@ from midiutil import MIDIFile
 from midiutil.MidiFile import MIDIFile
 import copy
 
+# created by Youngeon Lee
+# the program is limited to major and minor chords
+# pitch of notes has to be in the form of list even if its a single note
+
 notes  = None
 degrees = {'C':60, 'D':62, 'E':64, 'F':65, 'G':67, 'A':69, 'B':71}
 track    = 0
@@ -101,9 +105,21 @@ def close_note(target, notes):
         else:
             diff += 1
     return note
-    
 
-        
+
+def rand_chrd_prg():
+    """creates a random chord progression using common chord patterns"""
+    chrd_patt = {'C':['Am','G'],'Am':['C','G'],'G':['C','Dm','F','Am'],'Dm':["Am","F",'C'], 'F':['C','Am','G']}
+    chrd_prg = []
+    chrd_prg.append(random.choice(chrd_patt['C']))
+    for i in range(2):
+        chrd = chrd_patt[chrd_prg[-1]]
+        chrd_prg.append(random.choice(chrd))
+    chrd_prg.append('C')
+    return chrd_prg[::-1]
+
+
+                    
 class Note():
     """made of a list of pitches and duration/length of the notes"""
     def __init__(self,pitch=[0],duration=1):
@@ -142,7 +158,7 @@ class BasicIdea():
 
 
     def CA_notes(self):
-        """creates list of durations first then fills in the pitch"""
+        """creates list of durations first then fills in the pitch (strong notes followed by close notes)"""
         beat = 0
         # creating durations
         durations = []
@@ -161,7 +177,7 @@ class BasicIdea():
         beat = 0
         for i in range(len(durations)):
             if (beat+1)%self.beats_per_measure in self.str_beat:
-                chrd = self.chrd_prg[int(beat // 4)]
+                chrd = self.chrd_prg[int(beat // self.beats_per_measure)]
                 pitch = [random.choice(chord(chrd))]
                 pitches[i] = pitch
             beat += durations[i]
@@ -183,47 +199,90 @@ class BasicIdea():
             
 
 
-    def CA_notes1(self):
-        """create and add random notes"""
-        beat = 0
-        while beat < self.length*self.beats_per_measure:
-            if (beat+1)%self.beats_per_measure in self.str_beat:
-                chrd = self.chrd_prg[int(beat // 4)]
-                pitch = [random.choice(chord(chrd))]
-            else:
-                pitch = [random.choice(notes)]
-            duration = random.choices(list(self.note_lengths.keys()),list(self.note_lengths.values()))[0]
-            beat += duration
-            if beat > self.length*self.beats_per_measure:
-                beat -= duration
-                duration = self.length*self.beats_per_measure - beat
-                beat += duration
-            rnote = Note(pitch, duration)
-            self.add_note(rnote)
-        assert beat == self.length*self.beats_per_measure
+##    def CA_notes1(self):
+##        """create and add random notes (simple)"""
+##        beat = 0
+##        while beat < self.length*self.beats_per_measure:
+##            if (beat+1)%self.beats_per_measure in self.str_beat:
+##                chrd = self.chrd_prg[int(beat // 4)]
+##                pitch = [random.choice(chord(chrd))]
+##            else:
+##                pitch = [random.choice(notes)]
+##            duration = random.choices(list(self.note_lengths.keys()),list(self.note_lengths.values()))[0]
+##            beat += duration
+##            if beat > self.length*self.beats_per_measure:
+##                beat -= duration
+##                duration = self.length*self.beats_per_measure - beat
+##                beat += duration
+##            rnote = Note(pitch, duration)
+##            self.add_note(rnote)
+##        assert beat == self.length*self.beats_per_measure
 
 
-    def CA_bass(self):
-        """create and add plain bass"""
-        beat = 0
-        while beat < self.length*self.beats_per_measure:
-            chrd = self.chrd_prg[int(beat // 4)]
-            pitch = chord(chrd)
-            duration = 4
-            beat += duration
-            if beat > self.length*self.beats_per_measure:
-                beat -= duration
-                duration = self.length*self.beats_per_measure - beat
-                beat += duration
-            rnote = Note(to_bass(pitch), duration)
-            self.add_bass(rnote)
-        assert beat == self.length*self.beats_per_measure
+
+    def CA_bass(self, durations=[1,1,1,1], pattern=[0,2,1,2]):
+        """create and add quarter note bass based on given durations and pattern as lists"""
+        assert sum(durations) == self.beats_per_measure
+        assert len(durations) == len(pattern)
+        
+        for i in range(self.length):
+            chrd = self.chrd_prg[i]
+            chrd = to_bass(chord(chrd))
+            chrd.sort()
+            for j in range(len(durations)):
+                pitch = [chrd[pattern[j]]]
+                duration = durations[j]
+                note = Note(pitch, duration)
+                self.add_bass(note)
+                
+                
+##    def CA_bass2(self):
+##        """create and add quater note bass (1-3-2-3)"""
+##        beat = 0
+##        while beat < self.length*self.beats_per_measure:
+##            chrd = self.chrd_prg[int(beat // self.beats_per_measure)]
+##            chrd = to_bass(chord(chrd))
+##            pitch = [min(chrd)]
+##            duration = 1
+##            beat += duration
+##            rnote = Note(pitch, duration)
+##            self.add_bass(rnote)
+##            pitch = [max(chrd)]
+##            beat += duration
+##            rnote = Note(pitch, duration)
+##            self.add_bass(rnote)
+##            pitch = [median(chrd)]
+##            beat += duration
+##            rnote = Note(pitch, duration)
+##            self.add_bass(rnote)
+##            pitch = [max(chrd)]
+##            beat += duration
+##            rnote = Note(pitch, duration)
+##            self.add_bass(rnote)
+##            
+##        assert beat == self.length*self.beats_per_measure
+##
+##    def CA_bass1(self):
+##        """create and add plain bass"""
+##        beat = 0
+##        while beat < self.length*self.beats_per_measure:
+##            chrd = self.chrd_prg[int(beat // 4)]
+##            pitch = chord(chrd)
+##            duration = 4
+##            beat += duration
+##            if beat > self.length*self.beats_per_measure:
+##                beat -= duration
+##                duration = self.length*self.beats_per_measure - beat
+##                beat += duration
+##            rnote = Note(to_bass(pitch), duration)
+##            self.add_bass(rnote)
+##        assert beat == self.length*self.beats_per_measure
 
 
     def CA_last(self):
         """creat and add melody and bass for the last measure"""
-        mel = Note(chord(self.chrd_prg[0])[:1],4)
-        bass = Note(to_bass(chord(self.chrd_prg[0])),4)
+        mel = Note(chord(self.chrd_prg[0])[:1],self.beats_per_measure)
+        bass = Note(to_bass(chord(self.chrd_prg[0])),self.beats_per_measure)
         self.add_note(mel)
         self.add_bass(bass)
         
@@ -267,6 +326,7 @@ class Piece():
 
 
     def CA_last(self):
+        """create and add the last notes"""
         eidea = BasicIdea(chrd_prg=self.chrd_prg)
         eidea.CA_last()
         self.add_idea(eidea)
@@ -284,7 +344,7 @@ class Piece():
             self.add_idea(idea)
 
 
-    def write_midi(self):
+    def write_midi(self,name):
         """writes midi file for the piece"""
         time = 0
         MyMIDI = MIDIFile(1)
@@ -306,20 +366,47 @@ class Piece():
         
 
 
-        with open("test2.mid", "wb") as output_file:
+        with open(f"{name}.mid", "wb") as output_file:
             MyMIDI.writeFile(output_file)
-        print('Done! Midi file saved as "test2.mid"')
+        print(f'Done! Midi file saved as "{name}.mid"')
 
         
 
 
 def main():
-    p=Piece()
-    p.CA_ideas()
-    p.CA_last()
-    p.CA_neg_harm()
-    p.write_midi()
-    
+    chord = []
+    name = input('What will be the name of your piece?:')
+    while True:
+        length = input('How long do you want your piece to be? (ex... 4):' )
+        try:
+            length = int(length)
+            break
+        except:
+            print('You need to type in a number')
+        
+    print('You need to pick 4 chords!')
+    print('Recommened choices are: Am, C, Dm, Em, F, G')
+    for i in range(4):
+        user = input("Pick a chord!")
+        if len(user)==2:
+            user = user[0].upper()+user[1].lower()
+        else:
+            user = user.upper()
+        chord.append(user)
+    neg = input("Would you like to see a 'negative harmony' version of your piece as well? Yes or No:")
+    print('Creating the piece')
+    try:
+        p=Piece(length = length,chrd_prg=chord,str_beat=[1,2,3,4])
+        p.CA_ideas()
+        p.CA_last()
+        if neg.lower() == 'yes':
+            p.CA_neg_harm()
+            print('Created negative harmony')
+        p.write_midi(name)
+    except:
+        print('Failed')
+        print('You didnt follow my recommendation it seems')
+    input('Press enter to exit')
 
 if __name__ == '__main__':
     main()
