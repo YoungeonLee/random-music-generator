@@ -118,7 +118,7 @@ class Measure():
 
 
 class Melody():
-    def __init__(self,length=8,chrd_prg=['C','Am','F','G'],note_lengths={1:1,.5:1}):
+    def __init__(self,length=4,chrd_prg=['C','Am','F','G'],note_lengths={1:1,.5:1}):
         """chrd_prg = chord progression"""
         self.length = length
         self.measures = []
@@ -213,7 +213,7 @@ class Piece():
             
         
 
-    def write_midi(self):
+    def write_midi(self, name):
         """writes midi file for the piece"""
         time = 0
         MyMIDI = MIDIFile(1)
@@ -235,45 +235,32 @@ class Piece():
         
 
 
-        with open("test.mid", "wb") as output_file:
+        with open(f"{name}.mid", "wb") as output_file:
             MyMIDI.writeFile(output_file)
-        print('Done! Midi file saved as "test.mid"')
+        print(f'Done! Midi file saved as "{name}.mid"')
 
 
 
-def main():
-    p=Piece(chrd_prg=['C','G','Am','F'])
+def main(name='test', length=4, chrd_prg=['C','Am','F','G'], note_lengths={1:1,.5:1}, neg_harm=True):
+    assert len(chrd_prg) == 4, 'chord progression needs to be length of 4'
+    assert length % 2 == 0, 'length needs to be a even number'
+    assert length > 1, 'invalid length'
+    for chord in chrd_prg:
+        assert chord in ['C', 'Dm', 'Em', 'F', 'G', 'Am'], "currently, supported chords are 'C', 'Dm', 'Em', 'F', 'G', 'Am'"
+    if neg_harm:
+        length //= 2
+   
+    p=Piece(length, chrd_prg, note_lengths)
     print("created class piece")
     p.CA_melodies()
     print("created and added melodies")
-    p.CA_neg_harm()
-    print("created and added negative harmonies")
-    p.write_midi()
+    if neg_harm:
+        p.CA_neg_harm()
+        print("created and added negative harmonies")
+    p.write_midi(name)
     print("Finished!")
+    return f'{name}.mid'
 
-    
 
 if __name__ == '__main__':
     main()
-
-
-
-"""
-degrees  = [60, 62, 64, 65, 67, 69, 71, 72]  # MIDI note number
-track    = 0
-channel  = 0
-time     = 0    # In beats
-duration = 1    # In beats
-tempo    = 60   # In BPM
-volume   = 100  # 0-127, as per the MIDI standard
-
-MyMIDI = MIDIFile(1)  # One track, defaults to format 1 (tempo track is created
-                      # automatically)
-MyMIDI.addTempo(track, time, tempo)
-
-for i, pitch in enumerate(degrees):
-    MyMIDI.addNote(track, channel, pitch, time + i, duration, volume)
-
-with open("major-scale.mid", "wb") as output_file:
-    MyMIDI.writeFile(output_file)
-"""
