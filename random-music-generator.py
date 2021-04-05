@@ -170,7 +170,7 @@ class Piece():
     def CA_melodies(self):
         """create and add random melodies
         adds an extra ending measure with a note from the chord """
-        for i in range(self.length):
+        for _ in range(self.length):
             rmelody = Melody(chrd_prg=self.chrd_prg, note_lengths=self.note_lengths)
             rmelody.CA_measures()
             self.add_melody(rmelody)
